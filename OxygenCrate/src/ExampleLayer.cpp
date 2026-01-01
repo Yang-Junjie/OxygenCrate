@@ -93,28 +93,8 @@ void ExampleLayer::InitializeTextEditor()
     markers.insert(std::make_pair<int, std::string>(41, "Another example error"));
     m_TextEditor.SetErrorMarkers(markers);
 
-    const auto relativeFile = std::filesystem::path("external") / "ImGuiTextEditor" / "TextEditor.cpp";
-    const auto resolvedPath = ResolveRepoRelativePath(relativeFile);
-
-    if (!resolvedPath.empty())
-    {
-        m_FileToEdit = resolvedPath.string();
-        auto fileContents = ReadFileToString(resolvedPath);
-        if (!fileContents.empty())
-        {
-            m_TextEditor.SetText(fileContents);
-            m_StatusMessage = "Loaded " + m_FileToEdit;
-        }
-        else
-        {
-            m_StatusMessage = "Failed to read file: " + m_FileToEdit;
-        }
-    }
-    else
-    {
-        m_FileToEdit = relativeFile.string();
-        m_StatusMessage = "Could not locate " + m_FileToEdit;
-    }
+    m_StatusMessage = "No file loaded";
+    m_FileToEdit.clear();
 }
 
 void ExampleLayer::OnRenderUI()
