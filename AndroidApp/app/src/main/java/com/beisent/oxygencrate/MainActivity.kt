@@ -1,34 +1,50 @@
 package com.beisent.oxygencrate
 
-import androidx.appcompat.app.AppCompatActivity
+import android.app.NativeActivity
+import android.content.Context
 import android.os.Bundle
-import android.widget.TextView
-import com.beisent.oxygencrate.databinding.ActivityMainBinding
+import android.view.KeyEvent
+import android.view.inputmethod.InputMethodManager
+import java.util.concurrent.LinkedBlockingQueue
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : NativeActivity() {
 
-    private lateinit var binding: ActivityMainBinding
+    private val unicodeCharacterQueue = LinkedBlockingQueue<Int>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        binding = ActivityMainBinding.inflate(layoutInflater)
-        setContentView(binding.root)
-
-        // Example of a call to a native method
-        binding.sampleText.text = stringFromJNI()
     }
 
-    /**
-     * A native method that is implemented by the 'oxygencrate' native library,
-     * which is packaged with this application.
-     */
-    external fun stringFromJNI(): String
-
-    companion object {
-        // Used to load the 'oxygencrate' library on application startup.
-        init {
-            System.loadLibrary("oxygencrate")
+    fun showSoftInput() {
+        runOnUiThread {
+            val inputMethodManager = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+            val view = window.decorView
+            view.post {
+                view.requestFocus()
+                inputMethodManager.showSoftInput(view, InputMethodManager.SHOW_FORCED)
+            }
         }
+    }
+
+    fun hideSoftInput() {
+        runOnUiThread {
+            val inputMethodManager = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+            val token = window.decorView.windowToken
+            inputMethodManager.hideSoftInputFromWindow(token, 0)
+        }
+    }
+
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        if (event.action == KeyEvent.ACTION_DOWN) {
+            val unicodeChar = event.getUnicodeChar(event.metaState)
+            if (unicodeChar != 0) {
+                unicodeCharacterQueue.offer(unicodeChar)
+            }
+        }
+        return super.dispatchKeyEvent(event)
+    }
+
+    fun pollUnicodeChar(): Int {
+        return unicodeCharacterQueue.poll() ?: 0
     }
 }

@@ -12,9 +12,11 @@ set(PAINTER_SOURCES
         android_main.cpp
         ExampleApp.cpp
         ${OXYGENCRATE_ROOT}/OxygenCrate/src/ExampleLayer.cpp
+        ${OXYGENCRATE_ROOT}/external/ImGuiTextEditor/TextEditor.cpp
 )
 include_directories(${OXYGENCRATE_ROOT}/OxygenCrate/src
 ${OXYGENCRATE_ROOT}/external/Flux/Flux/Core/src
+${OXYGENCRATE_ROOT}/external/ImGuiTextEditor
         )
 
 add_library(${CMAKE_PROJECT_NAME} SHARED ${PAINTER_SOURCES})
