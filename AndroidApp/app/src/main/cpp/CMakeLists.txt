@@ -12,6 +12,8 @@ set(PAINTER_SOURCES
         android_main.cpp
         ExampleApp.cpp
         ${OXYGENCRATE_ROOT}/OxygenCrate/src/ExampleLayer.cpp
+        ${OXYGENCRATE_ROOT}/OxygenCrate/src/TextEditorPanel.cpp
+        ${OXYGENCRATE_ROOT}/OxygenCrate/Platform/Android/FilePicker.cpp
         ${OXYGENCRATE_ROOT}/external/ImGuiTextEditor/TextEditor.cpp
 )
 include_directories(${OXYGENCRATE_ROOT}/OxygenCrate/src

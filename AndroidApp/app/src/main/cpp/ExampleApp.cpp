@@ -10,7 +10,7 @@ std::unique_ptr<Application> CreateApplication() {
     ApplicationSpecification spec;
     spec.Name = "ExampleApp";
     spec.PlatformContext = g_AndroidApp;
-    spec.ImGuiUIScale = 2.0f;
+    spec.ImGuiUIScale = 2.5f;
 
     auto app = std::make_unique<Application>(spec);
     app->PushLayer(std::make_unique<ExampleLayer>());

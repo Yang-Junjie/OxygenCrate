@@ -18,6 +18,8 @@ add_subdirectory("${FLUX_SOURCE_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/external/Flux
 add_executable(OxygenCrate
     src/Application.cpp
     ${OXYGENCRATE_LAYER_DIR}/ExampleLayer.cpp
+    ${OXYGENCRATE_LAYER_DIR}/TextEditorPanel.cpp
+    ${OXYGENCRATE_ROOT}/OxygenCrate/Platform/Desktop/FileDialog.cpp
     ${OXYGENCRATE_ROOT}/external/ImGuiTextEditor/TextEditor.cpp
 )
 set_target_properties(OxygenCrate PROPERTIES
