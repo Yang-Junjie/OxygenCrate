@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.22.1)
-project("Example")
+project("Example")   
 
 get_filename_component(OXYGENCRATE_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../../../../../" ABSOLUTE)
 set(FLUX_SOURCE_DIR "${OXYGENCRATE_ROOT}/external/Flux")
