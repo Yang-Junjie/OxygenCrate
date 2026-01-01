@@ -1,0 +1,3 @@
+[submodule "external/Flux"]
+	path = external/Flux
+	url = https://github.com/Yang-Junjie/Flux.git
