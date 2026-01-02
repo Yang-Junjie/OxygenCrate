@@ -44,7 +44,7 @@ compileSdk = 36
     }
     sourceSets {
         getByName("main") {
-            assets.srcDirs("src/main/assets", "../../assets")
+            assets.srcDirs("src/main/assets", "../../OxygenCrate/assets")
         }
     }
 }

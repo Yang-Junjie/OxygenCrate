@@ -25,6 +25,7 @@ public:
     bool ShouldScrollConsole() const { return m_ScrollConsoleToBottom; }
     void AcknowledgeConsoleScroll() { m_ScrollConsoleToBottom = false; }
     bool HasDrawFunction() const { return m_LuaDrawFunction.valid(); }
+    void Update(float deltaTime);
     const std::string& GetLastError() const { return m_LuaError; }
     const std::string& GetSampleScript() const { return m_SampleScript; }
     bool IsReady() const { return m_IsScriptReady; }
@@ -38,6 +39,7 @@ private:
 
     sol::state m_LuaState;
     sol::protected_function m_LuaDrawFunction;
+    sol::protected_function m_LuaUpdateFunction;
     std::vector<std::string> m_LuaConsoleLines;
     bool m_ScrollConsoleToBottom = false;
     std::string m_LuaError;

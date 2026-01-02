@@ -14,6 +14,7 @@
 #ifdef __ANDROID__
 #include <android/asset_manager.h>
 #include <android_native_app_glue.h>
+#include <android/log.h>
 extern android_app* g_AndroidApp;
 #endif
 
@@ -33,6 +34,81 @@ namespace {
 constexpr const char* kSampleScriptFileName = "Sample.lua";
 constexpr const char* kVec2ModuleName = "Vec2.lua";
 }
+
+#ifdef __ANDROID__
+namespace {
+bool CanWriteToDirectory(const std::filesystem::path& dir)
+{
+    std::error_code ec;
+    std::filesystem::create_directories(dir, ec);
+    if (ec)
+        return false;
+
+    const auto testFile = dir / ".oxygen_write_test";
+    std::ofstream stream(testFile, std::ios::out | std::ios::trunc | std::ios::binary);
+    if (!stream.is_open())
+        return false;
+    stream << "ok";
+    stream.close();
+    std::filesystem::remove(testFile, ec);
+    return true;
+}
+
+std::filesystem::path GetPreferredAndroidLuaDirectory()
+{
+    return std::filesystem::path("/storage/emulated/0/Beisent/OxygenCrate/lua");
+}
+
+std::filesystem::path DetermineAndroidModuleDirectory()
+{
+    static bool sLoggedExternalFailure = false;
+    const std::filesystem::path preferred = GetPreferredAndroidLuaDirectory();
+    if (CanWriteToDirectory(preferred))
+    {
+        if (sLoggedExternalFailure)
+        {
+            __android_log_print(ANDROID_LOG_INFO, "OxygenCrate", "External Lua directory restored: %s", preferred.string().c_str());
+            sLoggedExternalFailure = false;
+        }
+        return preferred;
+    }
+    else if (!sLoggedExternalFailure)
+    {
+        __android_log_print(ANDROID_LOG_WARN, "OxygenCrate", "Unable to access %s. Grant MANAGE_EXTERNAL_STORAGE so Lua files can sync to external storage.", preferred.string().c_str());
+        sLoggedExternalFailure = true;
+    }
+
+    if (g_AndroidApp && g_AndroidApp->activity)
+    {
+        if (g_AndroidApp->activity->externalDataPath)
+        {
+            std::filesystem::path externalApp = std::filesystem::path(g_AndroidApp->activity->externalDataPath) / "lua";
+            if (CanWriteToDirectory(externalApp))
+            {
+                __android_log_print(ANDROID_LOG_WARN, "OxygenCrate", "Using app external directory for Lua modules: %s", externalApp.string().c_str());
+                return externalApp;
+            }
+        }
+
+        if (g_AndroidApp->activity->internalDataPath)
+        {
+            std::filesystem::path internal = std::filesystem::path(g_AndroidApp->activity->internalDataPath) / "lua";
+            if (CanWriteToDirectory(internal))
+            {
+                __android_log_print(ANDROID_LOG_WARN, "OxygenCrate", "Using internal storage for Lua modules: %s", internal.string().c_str());
+                return internal;
+            }
+        }
+    }
+
+    std::filesystem::path fallback = std::filesystem::temp_directory_path() / "OxygenCrateLua";
+    std::error_code ec;
+    std::filesystem::create_directories(fallback, ec);
+    __android_log_print(ANDROID_LOG_ERROR, "OxygenCrate", "Falling back to temporary directory for Lua modules: %s", fallback.string().c_str());
+    return fallback;
+}
+} // namespace
+#endif
 
 std::string ReadTextFile(const std::filesystem::path& path)
 {
@@ -126,17 +202,41 @@ bool WriteTextFile(const std::filesystem::path& path, const std::string& content
     return stream.good();
 }
 
+struct LuaAssetFile
+{
+    const char* AssetPath;
+    const char* RelativePath;
+};
+
+constexpr LuaAssetFile kLuaAssetFiles[] = {
+    { "lua/Vec2.lua", kVec2ModuleName },
+    { "lua/Sample.lua", kSampleScriptFileName },
+    { "lua/modules/VertexArray.lua", "modules/VertexArray.lua" },
+    { "lua/modules/VertexBuffer.lua", "modules/VertexBuffer.lua" },
+    { "lua/modules/IndexBuffer.lua", "modules/IndexBuffer.lua" },
+    { "lua/modules/BufferLayout.lua", "modules/BufferLayout.lua" },
+    { "lua/modules/Shader.lua", "modules/Shader.lua" },
+    { "lua/shaders/opengl/simple.vert", "shaders/opengl/simple.vert" },
+    { "lua/shaders/opengl/simple.frag", "shaders/opengl/simple.frag" },
+    { "lua/shaders/opengles/simple.vert", "shaders/opengles/simple.vert" },
+    { "lua/shaders/opengles/simple.frag", "shaders/opengles/simple.frag" },
+};
+
 std::filesystem::path LuaScriptHost::GetModuleDirectory()
 {
 #ifdef __ANDROID__
-    std::filesystem::path dir("/storage/emulated/0/Beisent/OxygenCrate/lua");
+    static std::filesystem::path s_ModuleDir;
+    std::filesystem::path resolved = DetermineAndroidModuleDirectory();
+    if (s_ModuleDir != resolved)
+        s_ModuleDir = std::move(resolved);
+    return s_ModuleDir;
 #else
     std::filesystem::path base = GetExecutableDirectory();
     std::filesystem::path dir = base / "lua";
-#endif
     std::error_code ec;
     std::filesystem::create_directories(dir, ec);
     return dir;
+#endif
 }
 
 static std::filesystem::path GetSampleScriptPath()
@@ -146,27 +246,48 @@ static std::filesystem::path GetSampleScriptPath()
 
 void LuaScriptHost::EnsureDefaultModulesInstalled()
 {
-    static bool s_Installed = false;
-    if (s_Installed)
-        return;
-
     const std::filesystem::path moduleDir = GetModuleDirectory();
-    const std::filesystem::path vec2Path = moduleDir / kVec2ModuleName;
-    const std::filesystem::path samplePath = moduleDir / kSampleScriptFileName;
-
     auto ensureFromAsset = [&](const char* assetRelativePath, const std::filesystem::path& destination) {
+        std::string assetData = ReadAssetFile(assetRelativePath);
+        if (assetData.empty())
+            return;
+
+        bool needsWrite = true;
         if (std::filesystem::exists(destination))
-            return;
-        std::string data = ReadAssetFile(assetRelativePath);
-        if (data.empty())
-            return;
-        WriteTextFile(destination, data);
+        {
+            std::string existing = ReadTextFile(destination);
+            needsWrite = existing != assetData;
+        }
+
+        if (needsWrite)
+            WriteTextFile(destination, assetData);
     };
 
-    ensureFromAsset("lua/Vec2.lua", vec2Path);
-    ensureFromAsset("lua/Sample.lua", samplePath);
+    auto installToDirectory = [&](const std::filesystem::path& baseDir) {
+        for (const auto& asset : kLuaAssetFiles)
+        {
+            const std::filesystem::path destination = baseDir / asset.RelativePath;
+            ensureFromAsset(asset.AssetPath, destination);
+        }
+    };
 
-    s_Installed = true;
+    installToDirectory(moduleDir);
+
+#ifdef __ANDROID__
+    const std::filesystem::path preferredExternal = GetPreferredAndroidLuaDirectory();
+    if (!preferredExternal.empty() && preferredExternal != moduleDir)
+    {
+        if (CanWriteToDirectory(preferredExternal))
+        {
+            installToDirectory(preferredExternal);
+            __android_log_print(ANDROID_LOG_INFO, "OxygenCrate", "Lua assets copied to %s", preferredExternal.string().c_str());
+        }
+        else
+        {
+            __android_log_print(ANDROID_LOG_WARN, "OxygenCrate", "External Lua directory %s not writable; using %s for runtime scripts.", preferredExternal.string().c_str(), moduleDir.string().c_str());
+        }
+    }
+#endif
 }
 
 LuaScriptHost::LuaScriptHost()
@@ -175,7 +296,18 @@ LuaScriptHost::LuaScriptHost()
     std::string sample = ReadTextFile(GetSampleScriptPath());
     if (sample.empty())
     {
-        sample = "-- Sample.lua not found in the lua directory. Add your own script and press \"Run Lua Script\".";
+        std::string assetSample = ReadAssetFile("lua/Sample.lua");
+        if (!assetSample.empty())
+        {
+            sample = assetSample;
+            WriteTextFile(GetSampleScriptPath(), sample);
+            AppendConsoleLine("[Info] Sample.lua regenerated from assets.");
+        }
+        else
+        {
+            sample = "-- Sample.lua not found in the lua directory. Add your own script and press \"Run Lua Script\".";
+            AppendConsoleLine("[Warning] Sample.lua missing and asset copy failed.");
+        }
     }
     m_SampleScript = std::move(sample);
     AppendConsoleLine("Load or type a Lua script, then press \"Run Lua Script\".");
@@ -186,6 +318,9 @@ bool LuaScriptHost::CompileScript(const std::string& script)
     m_LuaError.clear();
     m_LuaDrawFunction = sol::protected_function{};
     m_IsScriptReady = false;
+    m_LuaImages.clear();
+    m_ImageScratchBuffer.clear();
+    m_NextImageId = 1;
 
     if (script.empty())
     {
@@ -342,6 +477,42 @@ bool LuaScriptHost::CompileScript(const std::string& script)
             image->SetData(m_ImageScratchBuffer.data());
             return true;
         });
+        m_LuaState.set_function("load_module_file", [this](const std::string& relativePath)
+        {
+            if (relativePath.empty())
+            {
+                AppendConsoleLine("[Error] load_module_file: empty path");
+                return std::string{};
+            }
+
+            std::filesystem::path relPath(relativePath);
+            if (relPath.is_absolute())
+            {
+                AppendConsoleLine("[Error] load_module_file: absolute paths are not allowed");
+                return std::string{};
+            }
+
+            std::filesystem::path normalized;
+            for (const auto& part : relPath)
+            {
+                if (part == "..")
+                {
+                    AppendConsoleLine("[Error] load_module_file: '..' segments are not allowed");
+                    return std::string{};
+                }
+                if (part == ".")
+                    continue;
+                normalized /= part;
+            }
+
+            const std::filesystem::path fullPath = GetModuleDirectory() / normalized;
+            std::string contents = ReadTextFile(fullPath);
+            if (contents.empty())
+            {
+                AppendConsoleLine("[Error] load_module_file: failed to read " + normalized.string());
+            }
+            return contents;
+        });
         sol::table fluxImageTable = m_LuaState.create_named_table("flux_image");
         fluxImageTable.set_function("bind_framebuffer", [this](int imageId)
         {
@@ -376,7 +547,13 @@ bool LuaScriptHost::CompileScript(const std::string& script)
         if (!drawObj.valid() || drawObj.get_type() != sol::type::function)
             throw std::runtime_error("Returned table must contain a function named 'draw'.");
 
+        sol::object updateObj = uiTable["update"];
+
         m_LuaDrawFunction = drawObj.as<sol::protected_function>();
+        if (updateObj.valid() && updateObj.get_type() == sol::type::function)
+            m_LuaUpdateFunction = updateObj.as<sol::protected_function>();
+        else
+            m_LuaUpdateFunction = sol::protected_function{};
         AppendConsoleLine("Lua script compiled successfully.");
         m_IsScriptReady = true;
         return true;
@@ -402,6 +579,7 @@ void LuaScriptHost::Draw()
         m_LuaError = err.what();
         AppendConsoleLine(std::string("[Error] ") + m_LuaError);
         m_LuaDrawFunction = sol::protected_function{};
+        m_LuaUpdateFunction = sol::protected_function{};
         m_IsScriptReady = false;
     }
 }
@@ -435,6 +613,23 @@ bool LuaScriptHost::ExecuteConsoleCommand(const std::string& command)
 
     AppendConsoleLine("[Result] ok");
     return true;
+}
+
+void LuaScriptHost::Update(float deltaTime)
+{
+    if (!m_LuaUpdateFunction.valid())
+        return;
+
+    sol::protected_function_result callResult = m_LuaUpdateFunction(deltaTime);
+    if (!callResult.valid())
+    {
+        sol::error err = callResult;
+        m_LuaError = err.what();
+        AppendConsoleLine(std::string("[Error] ") + m_LuaError);
+        m_LuaUpdateFunction = sol::protected_function{};
+        m_LuaDrawFunction = sol::protected_function{};
+        m_IsScriptReady = false;
+    }
 }
 
 void LuaScriptHost::AppendConsoleLine(const std::string& line)

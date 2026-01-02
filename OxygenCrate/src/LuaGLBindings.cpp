@@ -99,6 +99,26 @@ void Register(sol::state& lua) {
             if (it != s_Buffers.end())
                 Flux::GL::BindBuffer(targetOverride.value_or(it->second.target), it->second.id);
         });
+        glTable.set_function("update_vertex_buffer", [](int handle, sol::as_table_t<std::vector<float>> vertices, sol::optional<unsigned int> usage) {
+            auto it = s_Buffers.find(handle);
+            if (it == s_Buffers.end() || it->second.target != GL_ARRAY_BUFFER)
+                return false;
+            const auto data = vertices.value();
+            if (data.empty())
+                return false;
+            Flux::GL::UpdateBufferData(it->second.id, GL_ARRAY_BUFFER, static_cast<std::size_t>(data.size() * sizeof(float)), data.data(), usage.value_or(GL_DYNAMIC_DRAW));
+            return true;
+        });
+        glTable.set_function("update_index_buffer", [](int handle, sol::as_table_t<std::vector<unsigned int>> indices, sol::optional<unsigned int> usage) {
+            auto it = s_Buffers.find(handle);
+            if (it == s_Buffers.end() || it->second.target != GL_ELEMENT_ARRAY_BUFFER)
+                return false;
+            const auto data = indices.value();
+            if (data.empty())
+                return false;
+            Flux::GL::UpdateBufferData(it->second.id, GL_ELEMENT_ARRAY_BUFFER, static_cast<std::size_t>(data.size() * sizeof(unsigned int)), data.data(), usage.value_or(GL_DYNAMIC_DRAW));
+            return true;
+        });
 
         glTable.set_function("create_vertex_array", []() {
             return StoreVertexArray();
