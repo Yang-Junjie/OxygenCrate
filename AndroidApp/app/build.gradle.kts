@@ -42,6 +42,11 @@ compileSdk = 36
     buildFeatures {
         viewBinding = true
     }
+    sourceSets {
+        getByName("main") {
+            assets.srcDirs("src/main/assets", "../../assets")
+        }
+    }
 }
 
 dependencies {

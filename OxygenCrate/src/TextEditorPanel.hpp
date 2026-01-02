@@ -12,6 +12,8 @@ public:
     TextEditorPanel();
 
     void Render();
+    std::string GetText() const;
+    void SetText(const std::string& text);
 
 private:
     void InitializeTextEditor();

@@ -1,3 +1,6 @@
 [submodule "external/Flux"]
 	path = external/Flux
 	url = https://github.com/Yang-Junjie/Flux.git
+[submodule "external/sol2"]
+	path = external/sol2
+	url = https://github.com/ThePhD/sol2.git

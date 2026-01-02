@@ -6,12 +6,16 @@ set(FLUX_SOURCE_DIR "${OXYGENCRATE_ROOT}/external/Flux")
 if(NOT EXISTS "${FLUX_SOURCE_DIR}/CMakeLists.txt")
     message(FATAL_ERROR "Flux submodule not found at ${FLUX_SOURCE_DIR}")
 endif()
+include("${OXYGENCRATE_ROOT}/cmake/OxygenLua.cmake")
 add_subdirectory("${FLUX_SOURCE_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/external/Flux")
 
 set(PAINTER_SOURCES
         android_main.cpp
         ExampleApp.cpp
         ${OXYGENCRATE_ROOT}/OxygenCrate/src/ExampleLayer.cpp
+        ${OXYGENCRATE_ROOT}/OxygenCrate/src/LuaConsoleWindow.cpp
+        ${OXYGENCRATE_ROOT}/OxygenCrate/src/LuaGLBindings.cpp
+        ${OXYGENCRATE_ROOT}/OxygenCrate/src/LuaScriptHost.cpp
         ${OXYGENCRATE_ROOT}/OxygenCrate/src/TextEditorPanel.cpp
         ${OXYGENCRATE_ROOT}/OxygenCrate/Platform/Android/FilePicker.cpp
         ${OXYGENCRATE_ROOT}/external/ImGuiTextEditor/TextEditor.cpp
@@ -19,11 +23,13 @@ set(PAINTER_SOURCES
 include_directories(${OXYGENCRATE_ROOT}/OxygenCrate/src
 ${OXYGENCRATE_ROOT}/external/Flux/Flux/Core/src
 ${OXYGENCRATE_ROOT}/external/ImGuiTextEditor
+${OXYGENCRATE_ROOT}/external/lua
+${OXYGENCRATE_ROOT}/external/sol2/include
         )
 
 add_library(${CMAKE_PROJECT_NAME} SHARED ${PAINTER_SOURCES})
 
-target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE FluxCore)
+target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE FluxCore OxygenLua)
 
 if(ANDROID)
     if(NOT DEFINED ANDROID_NDK)

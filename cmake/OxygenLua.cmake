@@ -1,0 +1,56 @@
+if(TARGET OxygenLua)
+    return()
+endif()
+
+if(NOT DEFINED OXYGENCRATE_ROOT)
+    message(FATAL_ERROR "OXYGENCRATE_ROOT must be defined before including OxygenLua.cmake")
+endif()
+
+set(OXYGENCRATE_LUA_DIR "${OXYGENCRATE_ROOT}/external/lua")
+set(OXYGENCRATE_LUA_SOURCE_DIR "${OXYGENCRATE_LUA_DIR}/src")
+
+set(OXYGENCRATE_LUA_SOURCES
+    ${OXYGENCRATE_LUA_SOURCE_DIR}/lapi.c
+    ${OXYGENCRATE_LUA_SOURCE_DIR}/lcode.c
+    ${OXYGENCRATE_LUA_SOURCE_DIR}/lctype.c
+    ${OXYGENCRATE_LUA_SOURCE_DIR}/ldebug.c
+    ${OXYGENCRATE_LUA_SOURCE_DIR}/ldo.c
+    ${OXYGENCRATE_LUA_SOURCE_DIR}/ldump.c
+    ${OXYGENCRATE_LUA_SOURCE_DIR}/lfunc.c
+    ${OXYGENCRATE_LUA_SOURCE_DIR}/lgc.c
+    ${OXYGENCRATE_LUA_SOURCE_DIR}/llex.c
+    ${OXYGENCRATE_LUA_SOURCE_DIR}/lmem.c
+    ${OXYGENCRATE_LUA_SOURCE_DIR}/lobject.c
+    ${OXYGENCRATE_LUA_SOURCE_DIR}/lopcodes.c
+    ${OXYGENCRATE_LUA_SOURCE_DIR}/lparser.c
+    ${OXYGENCRATE_LUA_SOURCE_DIR}/lstate.c
+    ${OXYGENCRATE_LUA_SOURCE_DIR}/lstring.c
+    ${OXYGENCRATE_LUA_SOURCE_DIR}/ltable.c
+    ${OXYGENCRATE_LUA_SOURCE_DIR}/ltm.c
+    ${OXYGENCRATE_LUA_SOURCE_DIR}/lundump.c
+    ${OXYGENCRATE_LUA_SOURCE_DIR}/lvm.c
+    ${OXYGENCRATE_LUA_SOURCE_DIR}/lzio.c
+    ${OXYGENCRATE_LUA_SOURCE_DIR}/lauxlib.c
+    ${OXYGENCRATE_LUA_SOURCE_DIR}/lbaselib.c
+    ${OXYGENCRATE_LUA_SOURCE_DIR}/lcorolib.c
+    ${OXYGENCRATE_LUA_SOURCE_DIR}/ldblib.c
+    ${OXYGENCRATE_LUA_SOURCE_DIR}/liolib.c
+    ${OXYGENCRATE_LUA_SOURCE_DIR}/lmathlib.c
+    ${OXYGENCRATE_LUA_SOURCE_DIR}/loslib.c
+    ${OXYGENCRATE_LUA_SOURCE_DIR}/lstrlib.c
+    ${OXYGENCRATE_LUA_SOURCE_DIR}/ltablib.c
+    ${OXYGENCRATE_LUA_SOURCE_DIR}/linit.c
+    ${OXYGENCRATE_LUA_SOURCE_DIR}/lutf8lib.c
+    ${OXYGENCRATE_LUA_SOURCE_DIR}/loadlib.c
+)
+
+add_library(OxygenLua STATIC ${OXYGENCRATE_LUA_SOURCES})
+target_include_directories(OxygenLua PUBLIC
+    ${OXYGENCRATE_LUA_DIR}
+    ${OXYGENCRATE_LUA_SOURCE_DIR}
+)
+set_target_properties(OxygenLua PROPERTIES POSITION_INDEPENDENT_CODE ON)
+
+if(MSVC)
+    target_compile_definitions(OxygenLua PRIVATE _CRT_SECURE_NO_WARNINGS)
+endif()

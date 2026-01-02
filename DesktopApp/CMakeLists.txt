@@ -3,6 +3,9 @@ project(OxygenCrateDesktop)
 
 get_filename_component(OXYGENCRATE_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/.." ABSOLUTE)
 set(OXYGENCRATE_LAYER_DIR "${OXYGENCRATE_ROOT}/OxygenCrate/src")
+set(OXYGENCRATE_ASSETS_DIR "${OXYGENCRATE_ROOT}/OxygenCrate/assets")
+
+include("${OXYGENCRATE_ROOT}/cmake/OxygenLua.cmake")
 
 if(NOT DEFINED BIN_DIR)
     set(BIN_DIR "${CMAKE_BINARY_DIR}/bin")
@@ -18,6 +21,9 @@ add_subdirectory("${FLUX_SOURCE_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/external/Flux
 add_executable(OxygenCrate
     src/Application.cpp
     ${OXYGENCRATE_LAYER_DIR}/ExampleLayer.cpp
+    ${OXYGENCRATE_LAYER_DIR}/LuaConsoleWindow.cpp
+    ${OXYGENCRATE_LAYER_DIR}/LuaGLBindings.cpp
+    ${OXYGENCRATE_LAYER_DIR}/LuaScriptHost.cpp
     ${OXYGENCRATE_LAYER_DIR}/TextEditorPanel.cpp
     ${OXYGENCRATE_ROOT}/OxygenCrate/Platform/Desktop/FileDialog.cpp
     ${OXYGENCRATE_ROOT}/external/ImGuiTextEditor/TextEditor.cpp
@@ -26,9 +32,17 @@ set_target_properties(OxygenCrate PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${BIN_DIR}
 )
 target_link_libraries(OxygenCrate PRIVATE FluxCore)
+target_link_libraries(OxygenCrate PRIVATE OxygenLua)
 target_include_directories(OxygenCrate PRIVATE
     ${OXYGENCRATE_LAYER_DIR}
     ${OXYGENCRATE_ROOT}/external/Flux/Flux/Core/src
     ${OXYGENCRATE_ROOT}/external/Flux/Flux/external/imgui
     ${OXYGENCRATE_ROOT}/external/ImGuiTextEditor
+    ${OXYGENCRATE_ROOT}/external/lua
+    ${OXYGENCRATE_ROOT}/external/sol2/include
 )
+add_custom_command(TARGET OxygenCrate POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${BIN_DIR}/assets"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+            "${OXYGENCRATE_ASSETS_DIR}"
+            "${BIN_DIR}/assets")
