@@ -1,5 +1,5 @@
 #include "TextEditorPanel.hpp"
-#include "LuaScriptHost.hpp"
+#include "Panels/LuaPanels/LuaScriptHost.hpp"
 #include <filesystem>
 #include <fstream>
 #include <iterator>

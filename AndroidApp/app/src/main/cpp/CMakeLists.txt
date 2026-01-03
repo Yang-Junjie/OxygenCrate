@@ -19,11 +19,11 @@ set(PAINTER_SOURCES
         android_main.cpp
         ExampleApp.cpp
         ${OXYGENCRATE_ROOT}/OxygenCrate/src/ExampleLayer.cpp
-        ${OXYGENCRATE_ROOT}/OxygenCrate/src/LuaConsoleWindow.cpp
-        ${OXYGENCRATE_ROOT}/OxygenCrate/src/LuaGLBindings.cpp
-        ${OXYGENCRATE_ROOT}/OxygenCrate/src/LuaScriptHost.cpp
-        ${OXYGENCRATE_ROOT}/OxygenCrate/src/TextEditorPanel.cpp
-        ${OXYGENCRATE_ROOT}/OxygenCrate/src/SchedulePanel.cpp
+        ${OXYGENCRATE_ROOT}/OxygenCrate/src/Panels/LuaPanels/LuaConsoleWindow.cpp
+        ${OXYGENCRATE_ROOT}/OxygenCrate/src/Panels/LuaPanels/LuaGLBindings.cpp
+        ${OXYGENCRATE_ROOT}/OxygenCrate/src/Panels/LuaPanels/LuaScriptHost.cpp
+        ${OXYGENCRATE_ROOT}/OxygenCrate/src/Panels/TextEditorPanel/TextEditorPanel.cpp
+        ${OXYGENCRATE_ROOT}/OxygenCrate/src/Panels/SchedulePanel/SchedulePanel.cpp
         ${OXYGENCRATE_ROOT}/OxygenCrate/Platform/Android/FilePicker.cpp
         ${OXYGENCRATE_ROOT}/external/ImGuiTextEditor/TextEditor.cpp
 )

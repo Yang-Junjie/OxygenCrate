@@ -27,11 +27,11 @@ add_subdirectory("${OXYGENCRATE_ROOT}/external/yaml-cpp" "${CMAKE_CURRENT_BINARY
 add_executable(OxygenCrate
     src/Application.cpp
     ${OXYGENCRATE_LAYER_DIR}/ExampleLayer.cpp
-    ${OXYGENCRATE_LAYER_DIR}/LuaConsoleWindow.cpp
-    ${OXYGENCRATE_LAYER_DIR}/LuaGLBindings.cpp
-    ${OXYGENCRATE_LAYER_DIR}/LuaScriptHost.cpp
-    ${OXYGENCRATE_LAYER_DIR}/TextEditorPanel.cpp
-    ${OXYGENCRATE_LAYER_DIR}/SchedulePanel.cpp
+    ${OXYGENCRATE_LAYER_DIR}/Panels/LuaPanels/LuaConsoleWindow.cpp
+    ${OXYGENCRATE_LAYER_DIR}/Panels/LuaPanels/LuaGLBindings.cpp
+    ${OXYGENCRATE_LAYER_DIR}/Panels/LuaPanels/LuaScriptHost.cpp
+    ${OXYGENCRATE_LAYER_DIR}/Panels/TextEditorPanel/TextEditorPanel.cpp
+    ${OXYGENCRATE_LAYER_DIR}/Panels/SchedulePanel/SchedulePanel.cpp
     ${OXYGENCRATE_ROOT}/OxygenCrate/Platform/Desktop/FileDialog.cpp
     ${OXYGENCRATE_ROOT}/external/ImGuiTextEditor/TextEditor.cpp
 )

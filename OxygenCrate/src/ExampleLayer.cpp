@@ -43,9 +43,11 @@ void ExampleLayer::OnRenderUI()
     if (m_ShowDemo)
         ImGui::ShowDemoWindow(&m_ShowDemo);
 
-    m_TextEditorPanel.Render();
+    if (m_ShowTextEditorPanel)
+        m_TextEditorPanel.Render();
     RenderControlPanel();
-    m_SchedulePanel.Render();
+    if (m_ShowSchedulePanel)
+        m_SchedulePanel.Render();
     m_LuaConsole.Render(m_LuaHost);
 }
 
@@ -55,6 +57,12 @@ void ExampleLayer::RenderControlPanel()
     ImGui::Text("Hello from ExampleLayer!");
     if (ImGui::Button("Toggle Demo"))
         m_ShowDemo = !m_ShowDemo;
+    ImGui::SameLine();
+    if (ImGui::Button("Toggle Text Editor"))
+        m_ShowTextEditorPanel = !m_ShowTextEditorPanel;
+    ImGui::SameLine();
+    if (ImGui::Button("Toggle Schedule"))
+        m_ShowSchedulePanel = !m_ShowSchedulePanel;
 
     ImGui::Separator();
     ImGui::TextUnformatted("Lua integration");
@@ -83,7 +91,7 @@ void ExampleLayer::RenderControlPanel()
 
 void ExampleLayer::RenderLuaOutput()
 {
-    ImGui::Separator();
+    
     ImGui::TextUnformatted("Lua UI output");
     ImGui::PushID("LuaUIArea");
     if (m_LuaHost.HasDrawFunction())
@@ -91,4 +99,5 @@ void ExampleLayer::RenderLuaOutput()
     else
         ImGui::TextWrapped("No Lua UI is active. Load/enter a script and press \"Run Lua Script\".");
     ImGui::PopID();
+    ImGui::Separator();
 }
