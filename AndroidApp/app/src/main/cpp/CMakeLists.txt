@@ -9,6 +9,12 @@ endif()
 include("${OXYGENCRATE_ROOT}/cmake/OxygenLua.cmake")
 add_subdirectory("${FLUX_SOURCE_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/external/Flux")
 
+set(YAML_CPP_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(YAML_CPP_BUILD_TOOLS OFF CACHE BOOL "" FORCE)
+set(YAML_CPP_BUILD_CONTRIB OFF CACHE BOOL "" FORCE)
+set(YAML_BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+add_subdirectory("${OXYGENCRATE_ROOT}/external/yaml-cpp" "${CMAKE_CURRENT_BINARY_DIR}/external/yaml-cpp")
+
 set(PAINTER_SOURCES
         android_main.cpp
         ExampleApp.cpp
@@ -17,6 +23,7 @@ set(PAINTER_SOURCES
         ${OXYGENCRATE_ROOT}/OxygenCrate/src/LuaGLBindings.cpp
         ${OXYGENCRATE_ROOT}/OxygenCrate/src/LuaScriptHost.cpp
         ${OXYGENCRATE_ROOT}/OxygenCrate/src/TextEditorPanel.cpp
+        ${OXYGENCRATE_ROOT}/OxygenCrate/src/SchedulePanel.cpp
         ${OXYGENCRATE_ROOT}/OxygenCrate/Platform/Android/FilePicker.cpp
         ${OXYGENCRATE_ROOT}/external/ImGuiTextEditor/TextEditor.cpp
 )
@@ -29,7 +36,7 @@ ${OXYGENCRATE_ROOT}/external/sol2/include
 
 add_library(${CMAKE_PROJECT_NAME} SHARED ${PAINTER_SOURCES})
 
-target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE FluxCore OxygenLua)
+target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE FluxCore OxygenLua yaml-cpp)
 
 if(ANDROID)
     if(NOT DEFINED ANDROID_NDK)

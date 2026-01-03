@@ -17,6 +17,12 @@ if(NOT EXISTS "${FLUX_SOURCE_DIR}/CMakeLists.txt")
 endif()
 add_subdirectory("${FLUX_SOURCE_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/external/Flux")
 
+set(YAML_CPP_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(YAML_CPP_BUILD_TOOLS OFF CACHE BOOL "" FORCE)
+set(YAML_CPP_BUILD_CONTRIB OFF CACHE BOOL "" FORCE)
+set(YAML_BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+add_subdirectory("${OXYGENCRATE_ROOT}/external/yaml-cpp" "${CMAKE_CURRENT_BINARY_DIR}/external/yaml-cpp")
+
 
 add_executable(OxygenCrate
     src/Application.cpp
@@ -25,6 +31,7 @@ add_executable(OxygenCrate
     ${OXYGENCRATE_LAYER_DIR}/LuaGLBindings.cpp
     ${OXYGENCRATE_LAYER_DIR}/LuaScriptHost.cpp
     ${OXYGENCRATE_LAYER_DIR}/TextEditorPanel.cpp
+    ${OXYGENCRATE_LAYER_DIR}/SchedulePanel.cpp
     ${OXYGENCRATE_ROOT}/OxygenCrate/Platform/Desktop/FileDialog.cpp
     ${OXYGENCRATE_ROOT}/external/ImGuiTextEditor/TextEditor.cpp
 )
@@ -33,6 +40,7 @@ set_target_properties(OxygenCrate PROPERTIES
 )
 target_link_libraries(OxygenCrate PRIVATE FluxCore)
 target_link_libraries(OxygenCrate PRIVATE OxygenLua)
+target_link_libraries(OxygenCrate PRIVATE yaml-cpp)
 target_include_directories(OxygenCrate PRIVATE
     ${OXYGENCRATE_LAYER_DIR}
     ${OXYGENCRATE_ROOT}/external/Flux/Flux/Core/src

@@ -18,6 +18,7 @@ public:
 
     bool CompileScript(const std::string& script);
     void Draw();
+    void Render(float deltaTime);
     void ClearConsole();
     bool ExecuteConsoleCommand(const std::string& command);
 
@@ -39,6 +40,7 @@ private:
 
     sol::state m_LuaState;
     sol::protected_function m_LuaDrawFunction;
+    sol::protected_function m_LuaRenderFunction;
     sol::protected_function m_LuaUpdateFunction;
     std::vector<std::string> m_LuaConsoleLines;
     bool m_ScrollConsoleToBottom = false;

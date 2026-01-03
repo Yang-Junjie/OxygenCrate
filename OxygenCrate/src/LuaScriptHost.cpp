@@ -317,6 +317,7 @@ bool LuaScriptHost::CompileScript(const std::string& script)
 {
     m_LuaError.clear();
     m_LuaDrawFunction = sol::protected_function{};
+    m_LuaRenderFunction = sol::protected_function{};
     m_IsScriptReady = false;
     m_LuaImages.clear();
     m_ImageScratchBuffer.clear();
@@ -547,13 +548,38 @@ bool LuaScriptHost::CompileScript(const std::string& script)
         if (!drawObj.valid() || drawObj.get_type() != sol::type::function)
             throw std::runtime_error("Returned table must contain a function named 'draw'.");
 
-        sol::object updateObj = uiTable["update"];
+        sol::object updateObj;
+        sol::object renderObj;
+        const std::array<const char*, 3> updateNames = { "update", "on_update", "onUpdate" };
+        for (const char* name : updateNames)
+        {
+            sol::object candidate = uiTable[name];
+            if (candidate.valid() && candidate.get_type() == sol::type::function)
+            {
+                updateObj = candidate;
+                break;
+            }
+        }
+        const std::array<const char*, 3> renderNames = { "render", "on_render", "onRender" };
+        for (const char* name : renderNames)
+        {
+            sol::object candidate = uiTable[name];
+            if (candidate.valid() && candidate.get_type() == sol::type::function)
+            {
+                renderObj = candidate;
+                break;
+            }
+        }
 
         m_LuaDrawFunction = drawObj.as<sol::protected_function>();
-        if (updateObj.valid() && updateObj.get_type() == sol::type::function)
+        if (updateObj.valid())
             m_LuaUpdateFunction = updateObj.as<sol::protected_function>();
         else
             m_LuaUpdateFunction = sol::protected_function{};
+        if (renderObj.valid())
+            m_LuaRenderFunction = renderObj.as<sol::protected_function>();
+        else
+            m_LuaRenderFunction = sol::protected_function{};
         AppendConsoleLine("Lua script compiled successfully.");
         m_IsScriptReady = true;
         return true;
@@ -579,7 +605,26 @@ void LuaScriptHost::Draw()
         m_LuaError = err.what();
         AppendConsoleLine(std::string("[Error] ") + m_LuaError);
         m_LuaDrawFunction = sol::protected_function{};
+        m_LuaRenderFunction = sol::protected_function{};
         m_LuaUpdateFunction = sol::protected_function{};
+        m_IsScriptReady = false;
+    }
+}
+
+void LuaScriptHost::Render(float deltaTime)
+{
+    if (!m_LuaRenderFunction.valid())
+        return;
+
+    sol::protected_function_result callResult = m_LuaRenderFunction(deltaTime);
+    if (!callResult.valid())
+    {
+        sol::error err = callResult;
+        m_LuaError = err.what();
+        AppendConsoleLine(std::string("[Error] ") + m_LuaError);
+        m_LuaRenderFunction = sol::protected_function{};
+        m_LuaUpdateFunction = sol::protected_function{};
+        m_LuaDrawFunction = sol::protected_function{};
         m_IsScriptReady = false;
     }
 }
@@ -628,6 +673,7 @@ void LuaScriptHost::Update(float deltaTime)
         AppendConsoleLine(std::string("[Error] ") + m_LuaError);
         m_LuaUpdateFunction = sol::protected_function{};
         m_LuaDrawFunction = sol::protected_function{};
+        m_LuaRenderFunction = sol::protected_function{};
         m_IsScriptReady = false;
     }
 }

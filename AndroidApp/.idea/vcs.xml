@@ -1,10 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="VcsDirectoryMappings">
+    <mapping directory="$PROJECT_DIR$/.." vcs="Git" />
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/app/src/main/cpp/external/Flux" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/app/src/main/cpp/external/Flux/Flux/external/GLFW" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/app/src/main/cpp/external/Flux/Flux/external/glm" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/app/src/main/cpp/external/Flux/Flux/external/imgui" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../external/Flux" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../external/Flux/Flux/external/GLFW" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../external/Flux/Flux/external/glm" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../external/Flux/Flux/external/imgui" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../external/sol2" vcs="Git" />
   </component>
 </project>

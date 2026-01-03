@@ -4,7 +4,6 @@ ExampleLayer::ExampleLayer() = default;
 
 void ExampleLayer::OnAttach()
 {
-    m_TextEditorPanel.SetText(m_LuaHost.GetSampleScript());
     m_LuaConsole.Hide();
     m_PendingScriptCompile = false;
 }
@@ -24,6 +23,7 @@ void ExampleLayer::OnUpdate(float dt)
         m_PendingScriptCompile = false;
     }
 
+    m_LuaHost.Render(dt);
     m_LuaHost.Update(dt);
 }
 
@@ -45,6 +45,7 @@ void ExampleLayer::OnRenderUI()
 
     m_TextEditorPanel.Render();
     RenderControlPanel();
+    m_SchedulePanel.Render();
     m_LuaConsole.Render(m_LuaHost);
 }
 
