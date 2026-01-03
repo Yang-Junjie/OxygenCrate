@@ -2,6 +2,7 @@
 #include "../../external/Flux/Flux/Core/src/Layer.hpp"
 #include "Panels/TextEditorPanel/TextEditorPanel.hpp"
 #include "Panels/SchedulePanel/SchedulePanel.hpp"
+#include "Panels/SettingPanel/SettingPanel.hpp"
 #include "Panels/LuaPanels/LuaScriptHost.hpp"
 #include "Panels/LuaPanels/LuaConsoleWindow.hpp"
 #include <imgui.h>
@@ -20,13 +21,16 @@ private:
     void RequestScriptCompile();
     void RenderControlPanel();
     void RenderLuaOutput();
+    void ApplyPanelPreferences(const SettingPanel::PanelPreferences& prefs);
 
     bool m_ShowDemo = false;
     bool m_ShowTextEditorPanel = false;
     bool m_ShowSchedulePanel = false;
+    bool m_ShowSettingsPanel = false;
     bool m_PendingScriptCompile = false;
     TextEditorPanel m_TextEditorPanel;
     SchedulePanel m_SchedulePanel;
+    SettingPanel m_SettingsPanel;
     LuaScriptHost m_LuaHost;
     LuaConsoleWindow m_LuaConsole;
 };

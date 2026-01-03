@@ -15,7 +15,6 @@ private:
     struct ScheduleEntry
     {
         std::array<char, 64> Course{};
-        std::array<char, 16> Date{};
         std::array<char, 16> Day{};
         std::array<char, 16> Start{};
         std::array<char, 16> End{};
@@ -33,6 +32,7 @@ private:
     std::filesystem::path GetStoragePath() const;
     void MarkDirty(const std::string& reason);
     void ClearStatus();
+    void SortEntries();
 
 private:
     std::vector<ScheduleEntry> m_ScheduleEntries;

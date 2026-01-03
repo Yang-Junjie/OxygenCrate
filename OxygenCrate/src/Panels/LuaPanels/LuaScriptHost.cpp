@@ -10,6 +10,7 @@
 #include <fstream>
 #include <iterator>
 #include <stdexcept>
+#include <tuple>
 
 #ifdef __ANDROID__
 #include <android/asset_manager.h>
@@ -376,6 +377,10 @@ bool LuaScriptHost::CompileScript(const std::string& script)
         {
             ImGui::Separator();
         });
+        imguiTable.set_function("get_framerate", []()
+        {
+            return ImGui::GetIO().Framerate;
+        });
         imguiTable.set_function("begin_window", [](const std::string& title, sol::optional<sol::table> options)
         {
             bool openValue = true;
@@ -404,11 +409,12 @@ bool LuaScriptHost::CompileScript(const std::string& script)
             ImGui::Checkbox(label.c_str(), &value);
             return value;
         });
-        imguiTable.set_function("slider_float", [](const std::string& label, float current, float minValue, float maxValue)
+        imguiTable.set_function("slider_float", [](const std::string& label, float current, float minValue, float maxValue, sol::optional<std::string> format)
         {
             float value = current;
-            ImGui::SliderFloat(label.c_str(), &value, minValue, maxValue);
-            return value;
+            const char* fmt = format ? format->c_str() : "%.3f";
+            bool changed = ImGui::SliderFloat(label.c_str(), &value, minValue, maxValue, fmt);
+            return std::make_tuple(value, changed);
         });
         imguiTable.set_function("image", [this](int imageId, float width, float height)
         {

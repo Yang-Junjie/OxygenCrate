@@ -24,6 +24,7 @@ set(PAINTER_SOURCES
         ${OXYGENCRATE_ROOT}/OxygenCrate/src/Panels/LuaPanels/LuaScriptHost.cpp
         ${OXYGENCRATE_ROOT}/OxygenCrate/src/Panels/TextEditorPanel/TextEditorPanel.cpp
         ${OXYGENCRATE_ROOT}/OxygenCrate/src/Panels/SchedulePanel/SchedulePanel.cpp
+        ${OXYGENCRATE_ROOT}/OxygenCrate/src/Panels/SettingPanel/SettingPanel.cpp
         ${OXYGENCRATE_ROOT}/OxygenCrate/Platform/Android/FilePicker.cpp
         ${OXYGENCRATE_ROOT}/external/ImGuiTextEditor/TextEditor.cpp
 )

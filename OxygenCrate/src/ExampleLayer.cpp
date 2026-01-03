@@ -4,7 +4,7 @@ ExampleLayer::ExampleLayer() = default;
 
 void ExampleLayer::OnAttach()
 {
-    m_LuaConsole.Hide();
+    ApplyPanelPreferences(m_SettingsPanel.GetPreferences());
     m_PendingScriptCompile = false;
 }
 
@@ -17,6 +17,10 @@ void ExampleLayer::OnDetach()
 
 void ExampleLayer::OnUpdate(float dt)
 {
+    SettingPanel::PanelPreferences pendingPrefs;
+    if (m_SettingsPanel.ConsumePendingPreferences(pendingPrefs))
+        ApplyPanelPreferences(pendingPrefs);
+
     if (m_PendingScriptCompile)
     {
         CompileLuaScript();
@@ -46,6 +50,8 @@ void ExampleLayer::OnRenderUI()
     if (m_ShowTextEditorPanel)
         m_TextEditorPanel.Render();
     RenderControlPanel();
+    if (m_ShowSettingsPanel)
+        m_SettingsPanel.Render();
     if (m_ShowSchedulePanel)
         m_SchedulePanel.Render();
     m_LuaConsole.Render(m_LuaHost);
@@ -54,33 +60,33 @@ void ExampleLayer::OnRenderUI()
 void ExampleLayer::RenderControlPanel()
 {
     ImGui::Begin("Example Layer");
-    ImGui::Text("Hello from ExampleLayer!");
-    if (ImGui::Button("Toggle Demo"))
-        m_ShowDemo = !m_ShowDemo;
-    ImGui::SameLine();
-    if (ImGui::Button("Toggle Text Editor"))
-        m_ShowTextEditorPanel = !m_ShowTextEditorPanel;
-    ImGui::SameLine();
-    if (ImGui::Button("Toggle Schedule"))
-        m_ShowSchedulePanel = !m_ShowSchedulePanel;
+    ImGui::TextWrapped("Quickly toggle panels and manage Lua scripting utilities from this hub.");
 
-    ImGui::Separator();
-    ImGui::TextUnformatted("Lua integration");
-    if (ImGui::Button("Run Lua Script"))
+    ImGui::SeparatorText("Panels");
+    ImGui::Checkbox("Demo window", &m_ShowDemo);
+    ImGui::Checkbox("Text editor", &m_ShowTextEditorPanel);
+    ImGui::Checkbox("Schedule planner", &m_ShowSchedulePanel);
+    ImGui::Checkbox("Settings panel", &m_ShowSettingsPanel);
+    bool consoleVisible = m_LuaConsole.IsVisible();
+    if (ImGui::Checkbox("Lua console", &consoleVisible))
+    {
+        if (consoleVisible)
+            m_LuaConsole.Show();
+        else
+            m_LuaConsole.Hide();
+    }
+
+    ImGui::SeparatorText("Lua integration");
+    if (ImGui::Button("Run script"))
         RequestScriptCompile();
     ImGui::SameLine();
-    if (ImGui::Button("Load sample script"))
+    if (ImGui::Button("Load sample"))
         m_TextEditorPanel.SetText(m_LuaHost.GetSampleScript());
-    ImGui::SameLine();
-    const bool consoleVisible = m_LuaConsole.IsVisible();
-    const char* consoleButtonLabel = consoleVisible ? "Hide console" : "Show console";
-    if (ImGui::Button(consoleButtonLabel))
-        m_LuaConsole.Toggle();
 
     const std::string& luaError = m_LuaHost.GetLastError();
     if (!luaError.empty())
     {
-        ImGui::Spacing();
+        ImGui::Separator();
         ImGui::TextColored(ImVec4(1.0f, 0.35f, 0.35f, 1.0f), "%s", luaError.c_str());
     }
 
@@ -100,4 +106,16 @@ void ExampleLayer::RenderLuaOutput()
         ImGui::TextWrapped("No Lua UI is active. Load/enter a script and press \"Run Lua Script\".");
     ImGui::PopID();
     ImGui::Separator();
+}
+
+void ExampleLayer::ApplyPanelPreferences(const SettingPanel::PanelPreferences& prefs)
+{
+    m_ShowDemo = prefs.ShowDemoWindow;
+    m_ShowTextEditorPanel = prefs.ShowTextEditor;
+    m_ShowSchedulePanel = prefs.ShowSchedule;
+    m_ShowSettingsPanel = prefs.ShowSettingsPanel;
+    if (prefs.ShowLuaConsole)
+        m_LuaConsole.Show();
+    else
+        m_LuaConsole.Hide();
 }

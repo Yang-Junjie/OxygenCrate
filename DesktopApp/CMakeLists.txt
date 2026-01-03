@@ -32,6 +32,7 @@ add_executable(OxygenCrate
     ${OXYGENCRATE_LAYER_DIR}/Panels/LuaPanels/LuaScriptHost.cpp
     ${OXYGENCRATE_LAYER_DIR}/Panels/TextEditorPanel/TextEditorPanel.cpp
     ${OXYGENCRATE_LAYER_DIR}/Panels/SchedulePanel/SchedulePanel.cpp
+    ${OXYGENCRATE_LAYER_DIR}/Panels/SettingPanel/SettingPanel.cpp
     ${OXYGENCRATE_ROOT}/OxygenCrate/Platform/Desktop/FileDialog.cpp
     ${OXYGENCRATE_ROOT}/external/ImGuiTextEditor/TextEditor.cpp
 )

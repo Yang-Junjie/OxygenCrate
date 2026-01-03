@@ -35,39 +35,20 @@ void CopyString(std::array<char, N>& destination, const char* source)
     std::snprintf(destination.data(), destination.size(), "%s", source ? source : "");
 }
 
-struct DateComponents
-{
-    int Year = 2026;
-    int Month = 1;
-    int Day = 1;
-};
-
 struct TimeComponents
 {
     int Hour = 9;
     int Minute = 0;
 };
 
-DateComponents GetCurrentDate()
+bool TryParseTimeComponents(const std::array<char, 16>& value, TimeComponents& out)
 {
-    DateComponents result;
-    std::time_t now = std::time(nullptr);
-    if (now == static_cast<std::time_t>(-1))
-        return result;
-    std::tm timeInfo{};
-#if defined(_WIN32)
-    localtime_s(&timeInfo, &now);
-#elif defined(__ANDROID__) || defined(__linux__)
-    localtime_r(&now, &timeInfo);
-#else
-    std::tm* converted = std::localtime(&now);
-    if (converted)
-        timeInfo = *converted;
-#endif
-    result.Year = timeInfo.tm_year + 1900;
-    result.Month = timeInfo.tm_mon + 1;
-    result.Day = timeInfo.tm_mday;
-    return result;
+    int hour = 0, minute = 0;
+    if (std::sscanf(value.data(), "%d:%d", &hour, &minute) != 2)
+        return false;
+    out.Hour = std::clamp(hour, 0, 23);
+    out.Minute = std::clamp(minute, 0, 59);
+    return true;
 }
 
 TimeComponents GetCurrentTime()
@@ -91,46 +72,11 @@ TimeComponents GetCurrentTime()
     return result;
 }
 
-int DaysInMonth(int year, int month)
-{
-    static const int kDaysPerMonth[] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
-    if (month < 1 || month > 12)
-        return 30;
-    int days = kDaysPerMonth[month - 1];
-    const bool leapYear = ((year % 4 == 0) && (year % 100 != 0)) || (year % 400 == 0);
-    if (month == 2 && leapYear)
-        days = 29;
-    return days;
-}
-
-DateComponents ParseDate(const std::array<char, 16>& value)
-{
-    DateComponents result = GetCurrentDate();
-    int y = 0, m = 0, d = 0;
-    if (std::sscanf(value.data(), "%d-%d-%d", &y, &m, &d) == 3)
-    {
-        result.Year = std::clamp(y, 2000, 2100);
-        result.Month = std::clamp(m, 1, 12);
-        result.Day = std::clamp(d, 1, DaysInMonth(result.Year, result.Month));
-    }
-    return result;
-}
-
-void WriteDate(const DateComponents& components, std::array<char, 16>& destination)
-{
-    std::snprintf(destination.data(), destination.size(), "%04d-%02d-%02d",
-        components.Year, components.Month, components.Day);
-}
-
 TimeComponents ParseTime(const std::array<char, 16>& value)
 {
     TimeComponents result = GetCurrentTime();
-    int hour = 0, minute = 0;
-    if (std::sscanf(value.data(), "%d:%d", &hour, &minute) == 2)
-    {
-        result.Hour = std::clamp(hour, 0, 23);
-        result.Minute = std::clamp(minute, 0, 59);
-    }
+    if (TryParseTimeComponents(value, result))
+        return result;
     return result;
 }
 
@@ -160,58 +106,46 @@ bool ParseLegacyRange(const std::string& legacy, TimeComponents& begin, TimeComp
 
 constexpr const char* kWeekdays[] = { "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun" };
 
-bool DrawDatePicker(const char* popupId, std::array<char, 16>& destination)
+int WeekdayOrder(const std::array<char, 16>& dayLabel)
 {
-    bool changed = false;
-    const char* displayText = destination[0] ? destination.data() : "Select date";
-    if (ImGui::Button(displayText, ImVec2(-FLT_MIN, 0.0f)))
-        ImGui::OpenPopup(popupId);
-
-    if (ImGui::BeginPopup(popupId))
+    for (int i = 0; i < 7; ++i)
     {
-        DateComponents date = ParseDate(destination);
-        int year = date.Year;
-        if (ImGui::InputInt("Year", &year))
-        {
-            date.Year = std::clamp(year, 2000, 2100);
-            date.Day = std::clamp(date.Day, 1, DaysInMonth(date.Year, date.Month));
-            WriteDate(date, destination);
-            changed = true;
-        }
-
-        int month = date.Month;
-        if (ImGui::SliderInt("Month", &month, 1, 12))
-        {
-            date.Month = month;
-            date.Day = std::clamp(date.Day, 1, DaysInMonth(date.Year, date.Month));
-            WriteDate(date, destination);
-            changed = true;
-        }
-
-        int maxDay = DaysInMonth(date.Year, date.Month);
-        int day = std::clamp(date.Day, 1, maxDay);
-        if (ImGui::SliderInt("Day", &day, 1, maxDay))
-        {
-            date.Day = day;
-            WriteDate(date, destination);
-            changed = true;
-        }
-
-        if (ImGui::Button("Today"))
-        {
-            WriteDate(GetCurrentDate(), destination);
-            changed = true;
-        }
-        ImGui::SameLine();
-        if (ImGui::Button("Clear"))
-        {
-            destination[0] = '\0';
-            changed = true;
-        }
-
-        ImGui::EndPopup();
+        if (std::strncmp(dayLabel.data(), kWeekdays[i], dayLabel.size()) == 0)
+            return i;
     }
-    return changed;
+    return 7;
+}
+
+int LegacyWeekdayIndexFromDate(const std::string& isoDate)
+{
+    int year = 0, month = 0, day = 0;
+    if (std::sscanf(isoDate.c_str(), "%d-%d-%d", &year, &month, &day) != 3)
+        return -1;
+    std::tm tm{};
+    tm.tm_year = year - 1900;
+    tm.tm_mon = month - 1;
+    tm.tm_mday = day;
+    if (std::mktime(&tm) == -1)
+        return -1;
+    if (tm.tm_wday == 0)
+        return 6;
+    return tm.tm_wday - 1;
+}
+
+std::string DayLabelFromLegacyDate(const std::string& isoDate)
+{
+    const int index = LegacyWeekdayIndexFromDate(isoDate);
+    if (index >= 0 && index < 7)
+        return kWeekdays[index];
+    return {};
+}
+
+int MinutesSinceMidnightSortKey(const std::array<char, 16>& value)
+{
+    TimeComponents components{};
+    if (!TryParseTimeComponents(value, components))
+        return 24 * 60 + 1; // Invalid entries go last
+    return components.Hour * 60 + components.Minute;
 }
 
 bool DrawTimePicker(const char* popupId, std::array<char, 16>& destination)
@@ -285,7 +219,13 @@ bool DrawWeekdaySelector(std::array<char, 16>& destination)
 
 SchedulePanel::SchedulePanel()
 {
-    if (!LoadFromDisk())
+    const std::filesystem::path storagePath = GetStoragePath();
+    if (std::filesystem::exists(storagePath))
+    {
+        if (!LoadFromDisk())
+            MarkDirty("Failed to load existing schedule. Fix the YAML file or delete it to reset.");
+    }
+    else
     {
         PopulateDefaultEntries();
         MarkDirty("Loaded default sample schedule");
@@ -355,14 +295,15 @@ void SchedulePanel::RenderToolbar()
 
 void SchedulePanel::RenderScheduleTable()
 {
+    SortEntries();
+
     const ImGuiTableFlags tableFlags = ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg |
         ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingStretchProp;
 
-    if (!ImGui::BeginTable("ScheduleTable", 7, tableFlags))
+    if (!ImGui::BeginTable("ScheduleTable", 6, tableFlags))
         return;
 
     ImGui::TableSetupColumn("Course");
-    ImGui::TableSetupColumn("Date");
     ImGui::TableSetupColumn("Day");
     ImGui::TableSetupColumn("Start");
     ImGui::TableSetupColumn("End");
@@ -394,37 +335,31 @@ bool SchedulePanel::DrawScheduleRow(int index, ScheduleEntry& entry)
     bool dirty = ImGui::InputText("##Course", entry.Course.data(), entry.Course.size());
 
     ImGui::TableSetColumnIndex(1);
-    ImGui::PushID("Date");
-    ImGui::SetNextItemWidth(-FLT_MIN);
-    dirty = detail::DrawDatePicker("DatePicker", entry.Date) || dirty;
-    ImGui::PopID();
-
-    ImGui::TableSetColumnIndex(2);
     ImGui::PushID("Day");
     ImGui::SetNextItemWidth(-FLT_MIN);
     dirty = detail::DrawWeekdaySelector(entry.Day) || dirty;
     ImGui::PopID();
 
-    ImGui::TableSetColumnIndex(3);
+    ImGui::TableSetColumnIndex(2);
     ImGui::PushID("Start");
     ImGui::SetNextItemWidth(-FLT_MIN);
     dirty = detail::DrawTimePicker("StartPicker", entry.Start) || dirty;
     ImGui::PopID();
 
-    ImGui::TableSetColumnIndex(4);
+    ImGui::TableSetColumnIndex(3);
     ImGui::PushID("End");
     ImGui::SetNextItemWidth(-FLT_MIN);
     dirty = detail::DrawTimePicker("EndPicker", entry.End) || dirty;
     ImGui::PopID();
 
-    ImGui::TableSetColumnIndex(5);
+    ImGui::TableSetColumnIndex(4);
     ImGui::SetNextItemWidth(-FLT_MIN);
     dirty = ImGui::InputText("##Location", entry.Location.data(), entry.Location.size()) || dirty;
 
     if (dirty)
         MarkDirty("Entry modified");
 
-    ImGui::TableSetColumnIndex(6);
+    ImGui::TableSetColumnIndex(5);
     if (ImGui::Button("Delete"))
     {
         MarkDirty("Entry removed");
@@ -439,25 +374,24 @@ void SchedulePanel::PopulateDefaultEntries()
     m_ScheduleEntries.resize(3);
 
     detail::CopyString(m_ScheduleEntries[0].Course, "Graphics 101");
-    detail::CopyString(m_ScheduleEntries[0].Date, "2026-03-01");
     detail::CopyString(m_ScheduleEntries[0].Day, "Mon");
     detail::CopyString(m_ScheduleEntries[0].Start, "09:00");
     detail::CopyString(m_ScheduleEntries[0].End, "10:30");
     detail::CopyString(m_ScheduleEntries[0].Location, "Room A1");
 
     detail::CopyString(m_ScheduleEntries[1].Course, "Linear Algebra");
-    detail::CopyString(m_ScheduleEntries[1].Date, "2026-03-03");
     detail::CopyString(m_ScheduleEntries[1].Day, "Wed");
     detail::CopyString(m_ScheduleEntries[1].Start, "14:00");
     detail::CopyString(m_ScheduleEntries[1].End, "15:30");
     detail::CopyString(m_ScheduleEntries[1].Location, "Room D2");
 
     detail::CopyString(m_ScheduleEntries[2].Course, "Game Dev Lab");
-    detail::CopyString(m_ScheduleEntries[2].Date, "2026-03-05");
     detail::CopyString(m_ScheduleEntries[2].Day, "Fri");
     detail::CopyString(m_ScheduleEntries[2].Start, "10:00");
     detail::CopyString(m_ScheduleEntries[2].End, "12:00");
     detail::CopyString(m_ScheduleEntries[2].Location, "Lab 3");
+
+    SortEntries();
 }
 
 bool SchedulePanel::LoadFromDisk()
@@ -493,8 +427,17 @@ bool SchedulePanel::LoadFromDisk()
                 };
 
                 detail::CopyString(entry.Course, getScalar("course").c_str());
-                copyValue(entry.Date, "date", nullptr);
                 copyValue(entry.Day, "day", nullptr);
+                if (!entry.Day[0])
+                {
+                    std::string legacyDate = getScalar("date");
+                    if (!legacyDate.empty())
+                    {
+                        std::string label = detail::DayLabelFromLegacyDate(legacyDate);
+                        if (!label.empty())
+                            detail::CopyString(entry.Day, label.c_str());
+                    }
+                }
                 copyValue(entry.Start, "start", nullptr);
                 copyValue(entry.End, "end", nullptr);
 
@@ -516,6 +459,7 @@ bool SchedulePanel::LoadFromDisk()
         }
 
         m_ScheduleEntries = std::move(loaded);
+        SortEntries();
         ClearStatus();
         m_StatusMessage = "Loaded schedule from " + path.string();
         return true;
@@ -543,7 +487,6 @@ void SchedulePanel::SaveToDisk()
         {
             YAML::Node node;
             node["course"] = std::string(entry.Course.data());
-            node["date"] = std::string(entry.Date.data());
             node["day"] = std::string(entry.Day.data());
             node["start"] = std::string(entry.Start.data());
             node["end"] = std::string(entry.End.data());
@@ -626,4 +569,25 @@ void SchedulePanel::ClearStatus()
 {
     m_Dirty = false;
     m_StatusMessage.clear();
+}
+
+void SchedulePanel::SortEntries()
+{
+    if (m_ScheduleEntries.size() <= 1)
+        return;
+
+    std::stable_sort(m_ScheduleEntries.begin(), m_ScheduleEntries.end(),
+        [](const ScheduleEntry& lhs, const ScheduleEntry& rhs) {
+            const int lhsDay = detail::WeekdayOrder(lhs.Day);
+            const int rhsDay = detail::WeekdayOrder(rhs.Day);
+            if (lhsDay != rhsDay)
+                return lhsDay < rhsDay;
+
+            const int lhsStart = detail::MinutesSinceMidnightSortKey(lhs.Start);
+            const int rhsStart = detail::MinutesSinceMidnightSortKey(rhs.Start);
+            if (lhsStart != rhsStart)
+                return lhsStart < rhsStart;
+
+            return std::strncmp(lhs.Course.data(), rhs.Course.data(), lhs.Course.size()) < 0;
+        });
 }
